@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Krahasuesi i Dizajneve PDF - Print Prepress</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- PDF.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Configure PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .checkerboard {
+            background-image: linear-gradient(45deg, #f3f4f6 25%, transparent 25%), 
+                              linear-gradient(-45deg, #f3f4f6 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #f3f4f6 75%), 
+                              linear-gradient(-45deg, transparent 75%, #f3f4f6 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+    <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 shadow-md">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-file-pdf text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight">Krahasuesi i Dizajneve PDF</h1>
+                <p class="text-xs text-slate-400">Verifiko saktësinë e shtypit pa humbur asnjë element</p>
+            </div>
+        </div>
+        
+        <!-- Global Controls / Status -->
+        <div id="global-stats" class="hidden flex items-center space-x-4 bg-slate-900/60 px-4 py-2 rounded-xl border border-slate-700/50 text-sm">
+            <span class="flex items-center text-slate-300">
+                <i class="fa-regular fa-file-lines text-indigo-400 mr-2"></i> Faqja: <strong id="current-page-label" class="ml-1 text-white">1</strong> / <span id="total-pages-label" class="ml-1 text-slate-400">1</span>
+            </span>
+
+            <div class="h-4 w-px bg-slate-700"></div>
+            <span class="text-xs text-emerald-400 bg-emerald-950/50 px-2.5 py-1 rounded-full border border-emerald-800/50 font-medium">
+                <i class="fa-solid fa-check-circle mr-1"></i> Gati për kontroll
+            </span>
+
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col p-4 md:p-6 max-w-7xl mx-auto w-full gap-6">
+
+        <!-- Uploader Section -->
+        <section id="uploader-section" class="bg-slate-800/80 backdrop-blur border border-slate-700 rounded-2xl p-6 shadow-xl transition-all">
+            <div class="text-center max-w-xl mx-auto mb-6">
+                <h2 class="text-lg font-semibold text-white mb-1">Ngarko skedarët PDF për krahasim</h2>
+                <p class="text-sm text-slate-400">Ngarko PDF-në origjinale (me vija prerjeje/formë) dhe PDF-në e punuar për shtyp (pa vija).</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Original PDF Upload Box -->
+                <div id="drop-orig" class="border-2 border-dashed border-slate-600 hover:border-indigo-500 bg-slate-900/50 rounded-xl p-6 text-center cursor-pointer transition-all group flex flex-col items-center justify-center min-h-[160px]">
+                    <input type="file" id="file-orig" accept="application/pdf" class="hidden">
+                    <div class="w-12 h-12 rounded-full bg-slate-800 group-hover:bg-indigo-600/20 text-slate-400 group-hover:text-indigo-400 flex items-center items-center justify-center mb-3 transition-colors">
+                        <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+                    </div>
+                    <h3 class="font-medium text-slate-200 text-sm mb-1" id="title-orig">1. PDF Origjinale (Me Vija)</h3>
+                    <p class="text-xs text-slate-400" id="desc-orig">Kliko ose tërhiq skedarin këtu</p>
+                </div>
+
+                <!-- Designed PDF Upload Box -->
+                <div id="drop-design" class="border-2 border-dashed border-slate-600 hover:border-indigo-500 bg-slate-900/50 rounded-xl p-6 text-center cursor-pointer transition-all group flex flex-col items-center justify-center min-h-[160px]">
+                    <input type="file" id="file-design" accept="application/pdf" class="hidden">
+                    <div class="w-12 h-12 rounded-full bg-slate-800 group-hover:bg-indigo-600/20 text-slate-400 group-hover:text-indigo-400 flex items-center items-center justify-center mb-3 transition-colors">
+                        <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+                    </div>
+                    <h3 class="font-medium text-slate-200 text-sm mb-1" id="title-design">2. PDF e Punuar për Shtyp (Pa Vija)</h3>
+                    <p class="text-xs text-slate-400" id="desc-design">Kliko ose tërhiq skedarin këtu</p>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-center">
+                <button id="btn-start" disabled class="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-medium px-8 py-3 rounded-xl shadow-lg transition-all flex items-center space-x-2">
+                    <i class="fa-solid fa-play"></i>
+                    <span>Fillo Krahasimin</span>
+                </button>
+            </div>
+        </section>
+
+        <section id="workspace-section" class="hidden flex-1 flex flex-col gap-4">
+            
+            <!-- Toolbar / Mode Switcher -->
+            <div class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex flex-wrap items-center justify-between gap-4">
+                
+                <!-- Modes -->
+                <div class="flex items-center bg-slate-900 p-1 rounded-lg border border-slate-700 space-x-1">
+                    <button id="mode-side" class="px-3.5 py-1.5 rounded-md text-xs font-medium bg-indigo-600 text-white transition-all shadow">
+                        <i class="fa-solid fa-columns mr-1.5"></i> Krah për Krah
+                    </button>
+                    <button id="mode-overlay" class="px-3.5 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white transition-all">
+                        <i class="fa-solid fa-layer-group mr-1.5"></i> Mbivendosje (Onion-skin)
+                    </button>
+                    <button id="mode-diff" class="px-3.5 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white transition-all">
+                        <i class="fa-solid fa-circle-half-stroke mr-1.5"></i> Visual Diff (Dallimet)
+                    </button>
+                </div>
+
+                <!-- Specific Mode Controls (e.g., Opacity Slider) -->
+                <div id="overlay-controls" class="hidden items-center space-x-3 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 text-xs">
+                    <span class="text-slate-400">Transparenca e Përparme:</span>
+                    <input type="range" id="opacity-slider" min="0" max="100" value="50" class="w-28 accent-indigo-500 cursor-pointer">
+                    <span id="opacity-val" class="font-mono text-indigo-400 w-8">50%</span>
+                </div>
+
+                <!-- Mask / Die-Cut helper toggle -->
+                <div class="flex items-center space-x-3 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 text-xs">
+                    <label class="flex items-center cursor-pointer select-none">
+                        <input type="checkbox" id="mask-toggle" class="rounded accent-indigo-600 w-4 h-4 mr-2">
+                        <span class="text-slate-300">Masko/Zvogëlo skajet (Injoro vijat e prerjes)</span>
+                    </label>
+                </div>
+
+                <!-- Pagination controls -->
+                <div class="flex items-center space-x-2">
+                    <button id="btn-prev" class="bg-slate-700 hover:bg-slate-600 text-white p-2 rounded-lg transition-all disabled:opacity-40">
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </button>
+                    <span class="text-xs font-medium px-2"><span id="page-indicator">1 / 1</span></span>
+                    <button id="btn-next" class="bg-slate-700 hover:bg-slate-600 text-white p-2 rounded-lg transition-all disabled:opacity-40">
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Viewport Container -->
+            <div id="viewer-container" class="flex-1 bg-slate-800/50 border border-slate-700 rounded-2xl p-4 overflow-hidden relative flex items-center justify-center min-h-[500px]">
+                
+                <!-- Side by Side View -->
+                <div id="view-side-container" class="w-full h-full flex flex-col md:flex-row gap-4 items-center justify-center">
+                    <div class="flex-1 flex flex-col items-center bg-slate-900/80 p-3 rounded-xl border border-slate-700/60 h-full max-h-[650px] overflow-auto">
+                        <span class="text-xs font-semibold text-indigo-400 mb-2 uppercase tracking-wider">Origjinali (Me vija)</span>
+                        <div class="checkerboard rounded-lg overflow-hidden shadow-inner flex items-center justify-center p-2 relative">
+                            <canvas id="canvas-orig-side" class="max-w-full h-auto object-contain"></canvas>
+                        </div>
+                    </div>
+                    <div class="flex-1 flex flex-col items-center bg-slate-900/80 p-3 rounded-xl border border-slate-700/60 h-full max-h-[650px] overflow-auto">
+                        <span class="text-xs font-semibold text-emerald-400 mb-2 uppercase tracking-wider">I Punuar për Shtyp</span>
+                        <div class="checkerboard rounded-lg overflow-hidden shadow-inner flex items-center justify-center p-2 relative">
+                            <canvas id="canvas-design-side" class="max-w-full h-auto object-contain"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Overlay & Diff View (Single combined canvas box) -->
+                <div id="view-single-container" class="hidden flex-col items-center justify-center h-full max-h-[680px]">
+                    <div class="checkerboard rounded-xl overflow-hidden shadow-2xl relative border border-slate-700 flex items-center justify-center p-2">
+                        <canvas id="canvas-base" class="block max-h-[600px] w-auto object-contain"></canvas>
+                        <canvas id="canvas-overlay" class="absolute block max-h-[600px] w-auto object-contain pointer-events-none"></canvas>
+                    </div>
+                    <p id="view-mode-hint" class="text-xs text-slate-400 mt-3 text-center">Përdor rrëshqitësin sipër për të ndryshuar transparencën dhe për të kontrolluar nëse elementët përkojnë.</p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="py-4 text-center text-xs text-slate-500 border-t border-slate-800">
+        made by marinel c
+    </footer>
+
+    <script>
+        let fileOrigObj = null;
+        let fileDesignObj = null;
+        let pdfOrig = null;
+        let pdfDesign = null;
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentMode = 'side'; // side, overlay, diff
+        let maskEnabled = false;
+        let currentOpacity = 0.5;
+
+        // Elements
+        const fileOrigInput = document.getElementById('file-orig');
+        const fileDesignInput = document.getElementById('file-design');
+        const dropOrig = document.getElementById('drop-orig');
+        const dropDesign = document.getElementById('drop-design');
+        const btnStart = document.getElementById('btn-start');
+        const uploaderSection = document.getElementById('uploader-section');
+        const workspaceSection = document.getElementById('workspace-section');
+        const globalStats = document.getElementById('global-stats');
+
+        // Drag & Drop handlers
+        setupDropZone(dropOrig, fileOrigInput, 'orig');
+        setupDropZone(dropDesign, fileDesignInput, 'design');
+
+        function setupDropZone(dropZone, inputElem, type) {
+            dropZone.addEventListener('click', () => inputElem.click());
+            inputElem.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileSelection(e.target.files[0], type);
+                }
+            });
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-indigo-500', 'bg-indigo-500/10');
+            });
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('border-indigo-500', 'bg-indigo-500/10');
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-indigo-500', 'bg-indigo-500/10');
+                if (e.dataTransfer.files.length > 0) {
+                    inputElem.files = e.dataTransfer.files;
+                    handleFileSelection(e.dataTransfer.files[0], type);
+                }
+            });
+        }
+
+        function handleFileSelection(file, type) {
+            if (file.type !== 'application/pdf') {
+                alert('Ju lutem ngarkoni një skedar të vlefshëm PDF.');
+                return;
+            }
+            if (type === 'orig') {
+                fileOrigObj = file;
+                document.getElementById('title-orig').innerText = file.name;
+                document.getElementById('desc-orig').innerText = `${(file.size / 1024 / 1024).toFixed(2)} MB - Ngarkuar me sukses`;
+                dropOrig.classList.add('border-emerald-500', 'bg-emerald-500/5');
+            } else {
+                fileDesignObj = file;
+                document.getElementById('title-design').innerText = file.name;
+                document.getElementById('desc-design').innerText = `${(file.size / 1024 / 1024).toFixed(2)} MB - Ngarkuar me sukses`;
+                dropDesign.classList.add('border-emerald-500', 'bg-emerald-500/5');
+            }
+
+            if (fileOrigObj && fileDesignObj) {
+                btnStart.removeAttribute('disabled');
+            }
+        }
+
+        btnStart.addEventListener('click', async () => {
+            try {
+                btnStart.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Duke ngarkuar PDF...';
+                
+                const bufferOrig = await fileOrigObj.arrayBuffer();
+                const bufferDesign = await fileDesignObj.arrayBuffer();
+
+                pdfOrig = await pdfjsLib.getDocument({ data: bufferOrig }).promise;
+                pdfDesign = await pdfjsLib.getDocument({ data: bufferDesign }).promise;
+
+                totalPages = Math.max(pdfOrig.numPages, pdfDesign.numPages);
+                currentPage = 1;
+
+                uploaderSection.classList.add('hidden');
+                workspaceSection.classList.remove('hidden');
+                globalStats.classList.remove('hidden');
+
+                document.getElementById('total-pages-label').innerText = totalPages;
+                updatePaginationControls();
+                await renderCurrentPage();
+
+            } catch (err) {
+                console.error(err);
+                alert('Ndodhi një gabim gjatë leximit të skedarëve PDF.');
+                btnStart.innerHTML = '<i class="fa-solid fa-play"></i> Fillo Krahasimin';
+            }
+        });
+
+        async function renderCurrentPage() {
+            document.getElementById('current-page-label').innerText = currentPage;
+            document.getElementById('page-indicator').innerText = `${currentPage} / ${totalPages}`;
+
+            // Fetch pages
+            const pageOrig = await pdfOrig.getPage(Math.min(currentPage, pdfOrig.numPages));
+            const pageDesign = await pdfDesign.getPage(Math.min(currentPage, pdfDesign.numPages));
+
+            const scale = 1.5; // High resolution rendering scale
+            const viewportOrig = pageOrig.getViewport({ scale });
+            const viewportDesign = pageDesign.getViewport({ scale });
+
+            if (currentMode === 'side') {
+                await renderSideBySide(pageOrig, viewportOrig, pageDesign, viewportDesign);
+            } else if (currentMode === 'overlay') {
+                await renderOverlay(pageOrig, viewportOrig, pageDesign, viewportDesign, false);
+            } else if (currentMode === 'diff') {
+                await renderOverlay(pageOrig, viewportOrig, pageDesign, viewportDesign, true);
+            }
+        }
+
+        async function renderSideBySide(pageOrig, vpOrig, pageDesign, vpDesign) {
+            const canvasOrig = document.getElementById('canvas-orig-side');
+            const canvasDesign = document.getElementById('canvas-design-side');
+
+            applyMaskAndRender(pageOrig, vpOrig, canvasOrig, maskEnabled);
+            applyMaskAndRender(pageDesign, vpDesign, canvasDesign, false);
+        }
+
+        async function renderOverlay(pageOrig, vpOrig, pageDesign, vpDesign, isDiff) {
+            const canvasBase = document.getElementById('canvas-base');
+            const canvasOverlay = document.getElementById('canvas-overlay');
+
+            // Render original to base canvas
+            await applyMaskAndRender(pageOrig, vpOrig, canvasBase, maskEnabled);
+            
+            // Render designed to overlay canvas
+            const tempCanvas = document.createElement('canvas');
+            await applyMaskAndRender(pageDesign, vpDesign, tempCanvas, false);
+
+            canvasOverlay.width = canvasBase.width;
+            canvasOverlay.height = canvasBase.height;
+            const ctx = canvasOverlay.getContext('2d');
+            ctx.clearRect(0, 0, canvasOverlay.width, canvasOverlay.height);
+
+            if (isDiff) {
+                // Visual difference mode: Blend mode difference
+                ctx.globalCompositeOperation = 'difference';
+                ctx.drawImage(tempCanvas, 0, 0, canvasOverlay.width, canvasOverlay.height);
+            } else {
+                // Onion skin mode with transparency slider
+                ctx.globalAlpha = currentOpacity;
+                ctx.drawImage(tempCanvas, 0, 0, canvasOverlay.width, canvasOverlay.height);
+            }
+        }
+
+        async function applyMaskAndRender(page, viewport, canvas, applyMask) {
+            let renderViewport = viewport;
+            let targetCanvas = canvas;
+            let renderContext;
+
+            if (applyMask) {
+                // If mask is enabled to exclude die-cut borders, we clip or crop inner 90%
+                const cropWidth = viewport.width * 0.92;
+                const cropHeight = viewport.height * 0.92;
+                const offsetX = (viewport.width * 0.08) / 2;
+                const offsetY = (viewport.height * 0.08) / 2;
+
+                targetCanvas.width = cropWidth;
+                targetCanvas.height = cropHeight;
+                const ctx = targetCanvas.getContext('2d');
+                ctx.save();
+                ctx.translate(-offsetX, -offsetY);
+                await page.render({ canvasContext: ctx, viewport }).promise;
+                ctx.restore();
+            } else {
+                targetCanvas.width = viewport.width;
+                targetCanvas.height = viewport.height;
+                const ctx = targetCanvas.getContext('2d');
+                await page.render({ canvasContext: ctx, viewport }).promise;
+            }
+        }
+
+        // Mode Switching logic
+        const modeSideBtn = document.getElementById('mode-side');
+        const modeOverlayBtn = document.getElementById('mode-overlay');
+        const modeDiffBtn = document.getElementById('mode-diff');
+        const viewSideContainer = document.getElementById('view-side-container');
+        const viewSingleContainer = document.getElementById('view-single-container');
+        const overlayControls = document.getElementById('overlay-controls');
+        const viewModeHint = document.getElementById('view-mode-hint');
+
+        function setMode(mode) {
+            currentMode = mode;
+            [modeSideBtn, modeOverlayBtn, modeDiffBtn].forEach(btn => {
+                btn.className = "px-3.5 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white transition-all";
+            });
+
+            if (mode === 'side') {
+                modeSideBtn.className = "px-3.5 py-1.5 rounded-md text-xs font-medium bg-indigo-600 text-white transition-all shadow";
+                viewSideContainer.classList.remove('hidden');
+                viewSideContainer.classList.add('flex');
+                viewSingleContainer.classList.remove('flex');
+                viewSingleContainer.classList.add('hidden');
+                overlayControls.classList.add('hidden');
+                overlayControls.classList.remove('flex');
+            } else {
+                viewSideContainer.classList.remove('flex');
+                viewSideContainer.classList.add('hidden');
+                viewSingleContainer.classList.remove('hidden');
+                viewSingleContainer.classList.add('flex');
+                overlayControls.classList.remove('hidden');
+                overlayControls.classList.add('flex');
+
+                if (mode === 'overlay') {
+                    modeOverlayBtn.className = "px-3.5 py-1.5 rounded-md text-xs font-medium bg-indigo-600 text-white transition-all shadow";
+                    viewModeHint.innerText = "Mënyra Mbivendosje: Përdor rrëshqitësin për të kontrolluar transparencën dhe për të dalluar çdo zhvendosje elementësh.";
+                } else {
+                    modeDiffBtn.className = "px-3.5 py-1.5 rounded-md text-xs font-medium bg-indigo-600 text-white transition-all shadow";
+                    viewModeHint.innerText = "Mënyra Visual Diff: Pjesët që përkojnë plotësisht shfaqen të zeza/gri. Çdo mospërputhje ose element i humbur theksohet në ngjyra.";
+                    overlayControls.classList.add('hidden'); // Diff doesn't use opacity slider
+                }
+            }
+            renderCurrentPage();
+        }
+
+        modeSideBtn.addEventListener('click', () => setMode('side'));
+        modeOverlayBtn.addEventListener('click', () => setMode('overlay'));
+        modeDiffBtn.addEventListener('click', () => setMode('diff'));
+
+        // Controls listeners
+        const opacitySlider = document.getElementById('opacity-slider');
+        const opacityVal = document.getElementById('opacity-val');
+        opacitySlider.addEventListener('input', (e) => {
+            currentOpacity = e.target.value / 100;
+            opacityVal.innerText = `${e.target.value}%`;
+            if (currentMode === 'overlay') {
+                renderCurrentPage();
+            }
+        });
+
+        const maskToggle = document.getElementById('mask-toggle');
+        maskToggle.addEventListener('change', (e) => {
+            maskEnabled = e.target.checked;
+            renderCurrentPage();
+        });
+
+        // Pagination buttons
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+
+        btnPrev.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderCurrentPage();
+                updatePaginationControls();
+            }
+        });
+
+        btnNext.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderCurrentPage();
+                updatePaginationControls();
+            }
+        });
+
+        function updatePaginationControls() {
+            btnPrev.disabled = currentPage <= 1;
+            btnNext.disabled = currentPage >= totalPages;
+        }
+    </script>
+</body>
+</html>
